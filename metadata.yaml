@@ -1,0 +1,17 @@
+name: kapacitor
+summary: Kapacitor is a data processing engine.
+maintainer: Dixan Peña Peña <dixan.pena@tengu.io>
+description: |
+  Kapacitor is designed to process streaming data in real-time.
+
+tags:
+   - streaming
+   - big_data
+subordinate: false
+provides:
+  website:
+    interface: http
+requires:
+  influxdb:
+    interface: influxdb-api
+series: ['xenial']
