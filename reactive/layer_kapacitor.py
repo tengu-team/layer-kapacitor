@@ -2,8 +2,9 @@ import os
 import subprocess
 import charmhelpers.fetch.archiveurl
 from charms.reactive import when, when_not, set_state
-from charmhelpers.core.hookenv import status_set, open_port, unit_private_ip
+from charmhelpers.core.hookenv import status_set, open_port, unit_private_ip, close_port, config
 from charmhelpers.core.templating import render
+from charmhelpers.core.host import service_restart
 
 @when_not('layer-kapacitor.installed')
 def install_layer_kapacitor():
@@ -21,10 +22,12 @@ def install_layer_kapacitor():
 def connect_kapacitor(influxdb):
     status_set('waiting', 'Kapacitor connected to InfluxDB.')
     print("influxdb reachable at http://{}:{}".format(influxdb.hostname(), influxdb.port()))
-
+    conf = config()
+    port = conf['port']
     render(source='kapacitor.conf',
            target='/usr/local/etc/kapacitor.conf',
            context={
+               'port': str(port),
                'influxdb': influxdb,
                'hostname': unit_private_ip()
            })
@@ -38,3 +41,22 @@ def start_kapacitor():
     subprocess.check_call(['sudo', 'service', 'kapacitor', 'start'])
     set_state('layer-kapacitor.started')
     status_set('active', '(Ready) Kapacitor started.')
+
+@when('layer-kapacitor.started', 'config.changed', 'influxdb.available')
+def change_configuration(influxdb):
+    conf = config()
+    port = conf['port']
+    old_port = conf.previous('port')
+    if conf.changed('port'):
+        render(source='kapacitor.conf',
+               target='/usr/local/etc/kapacitor.conf',
+               context={
+                   'port': str(port),
+                   'influxdb': influxdb,
+                   'hostname': unit_private_ip()
+               })
+        if old_port is not None:
+           close_port(old_port)
+        open_port(port)
+        service_restart("kapacitor")
+        
