@@ -10,5 +10,5 @@ options:
   port:
     type: int
     default: 9092
-    description: "A short description of the configuration option"
+    description: "The port that Kapacitor uses"
 
