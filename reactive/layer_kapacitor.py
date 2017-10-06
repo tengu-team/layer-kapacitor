@@ -37,10 +37,12 @@ def connect_kapacitor(influxdb):
 @when('layer-kapacitor.connected')
 @when_not('layer-kapacitor.started')
 def start_kapacitor():
-    open_port(9092)
+    conf = config()
+    port = conf['port']
+    open_port(port)
     subprocess.check_call(['sudo', 'service', 'kapacitor', 'start'])
-    set_state('layer-kapacitor.started')
     status_set('active', '(Ready) Kapacitor started.')
+    set_state('layer-kapacitor.started')
 
 @when('layer-kapacitor.started', 'config.changed', 'influxdb.available')
 def change_configuration(influxdb):
