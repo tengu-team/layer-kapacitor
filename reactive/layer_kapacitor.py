@@ -44,6 +44,7 @@ def start_kapacitor():
 
 @when('layer-kapacitor.started', 'config.changed', 'influxdb.available')
 def change_configuration(influxdb):
+    status_set('maintenance', 'configuring Kapacitor')
     conf = config()
     port = conf['port']
     old_port = conf.previous('port')
@@ -59,4 +60,4 @@ def change_configuration(influxdb):
            close_port(old_port)
         open_port(port)
         service_restart("kapacitor")
-        
+    status_set('active', '(Ready) Kapacitor started.')
