@@ -1,2 +1,2 @@
-includes: ['layer:basic', 'interface:influxdb-api']
+includes: ['layer:basic', 'interface:influxdb-api', 'interface:http']
 repo: git@github.com:tengu-team/layer-kapacitor.git
