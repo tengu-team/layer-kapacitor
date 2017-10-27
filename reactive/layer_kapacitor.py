@@ -31,7 +31,6 @@ def connect_kapacitor(influxdb):
                'influxdb': influxdb,
                'hostname': unit_private_ip()
            })
-
     set_state('layer-kapacitor.connected')
 
 @when('layer-kapacitor.connected')
