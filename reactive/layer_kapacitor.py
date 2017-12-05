@@ -1,9 +1,26 @@
+#!/usr/bin/python3
+# Copyright (C) 2017  Qrama
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# pylint: disable=c0111,c0103,c0301
 import os
 import subprocess
 import charmhelpers.fetch.archiveurl
 from charms.reactive import when, when_not, set_state
-from charmhelpers.core.hookenv import status_set, open_port, unit_private_ip
+from charmhelpers.core.hookenv import status_set, open_port, unit_private_ip, close_port, config
 from charmhelpers.core.templating import render
+from charmhelpers.core.host import service_restart
 
 @when_not('layer-kapacitor.installed')
 def install_layer_kapacitor():
@@ -21,20 +38,43 @@ def install_layer_kapacitor():
 def connect_kapacitor(influxdb):
     status_set('waiting', 'Kapacitor connected to InfluxDB.')
     print("influxdb reachable at http://{}:{}".format(influxdb.hostname(), influxdb.port()))
-
+    conf = config()
+    port = conf['port']
     render(source='kapacitor.conf',
            target='/usr/local/etc/kapacitor.conf',
            context={
+               'port': str(port),
                'influxdb': influxdb,
                'hostname': unit_private_ip()
            })
-
     set_state('layer-kapacitor.connected')
 
 @when('layer-kapacitor.connected')
 @when_not('layer-kapacitor.started')
 def start_kapacitor():
-    open_port(9092)
+    conf = config()
+    port = conf['port']
+    open_port(port)
     subprocess.check_call(['sudo', 'service', 'kapacitor', 'start'])
+    status_set('active', '(Ready) Kapacitor started.')
     set_state('layer-kapacitor.started')
+
+@when('layer-kapacitor.started', 'config.changed', 'influxdb.available')
+def change_configuration(influxdb):
+    status_set('maintenance', 'configuring Kapacitor')
+    conf = config()
+    port = conf['port']
+    old_port = conf.previous('port')
+    if conf.changed('port'):
+        render(source='kapacitor.conf',
+               target='/usr/local/etc/kapacitor.conf',
+               context={
+                   'port': str(port),
+                   'influxdb': influxdb,
+                   'hostname': unit_private_ip()
+               })
+        if old_port is not None:
+           close_port(old_port)
+        open_port(port)
+        service_restart("kapacitor")
     status_set('active', '(Ready) Kapacitor started.')
