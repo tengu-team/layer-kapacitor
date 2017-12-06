@@ -8,8 +8,8 @@ tags:
    - big_data
 subordinate: false
 provides:
-  website:
-    interface: http
+  kapacitor:
+    interface: kapacitor
 requires:
   influxdb:
     interface: influxdb-api

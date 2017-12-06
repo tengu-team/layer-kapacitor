@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+# !/usr/bin/python3
 # Copyright (C) 2017  Qrama
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,6 +13,8 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# pylint: disable=c0111,c0103,c0301,c0412,e0401
+
 import os
 import subprocess
 
@@ -40,7 +42,6 @@ def install_layer_kapacitor():
 @when_not('layer-kapacitor.connected')
 def connect_kapacitor(influxdb):
     status_set('waiting', 'Kapacitor connected to InfluxDB.')
-    print("influxdb reachable at http://{}:{}".format(influxdb.hostname(), influxdb.port()))
     conf = config()
     port = conf['port']
     render(source='kapacitor.conf',
@@ -83,3 +84,7 @@ def change_configuration(influxdb):
         open_port(port)
         service_restart("kapacitor")
     status_set('active', '(Ready) Kapacitor started.')
+
+@when('layer-kapacitor.started', 'kapacitor.available')
+def configure_relation(kapacitor):
+    kapacitor.configure(unit_private_ip(), config()['port'])
