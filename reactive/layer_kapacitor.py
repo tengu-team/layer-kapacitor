@@ -19,10 +19,10 @@ import os
 import subprocess
 
 import charmhelpers.fetch.archiveurl
-from charms.reactive import when, when_not, set_state
+from charms.reactive import when, when_not, set_state, remove_state
 from charmhelpers.core.hookenv import status_set, open_port, unit_private_ip, close_port, config
 from charmhelpers.core.templating import render
-from charmhelpers.core.host import service_restart
+from charmhelpers.core.host import service_restart, service_stop
 
 
 @when_not('layer-kapacitor.installed')
@@ -85,6 +85,15 @@ def change_configuration(influxdb):
         service_restart("kapacitor")
     status_set('active', '(Ready) Kapacitor started.')
 
+ @@when('layer-kapacitor.started', 'influxdb.departed'):
+ def relation_removed(influxdb):
+    remove_state('layer-kapacitor.started')
+    remove_state('layer-kapacitor.connected')
+    service_stop("kapacitor")
+    close_port(config()['port'])
+    status_set('blocked', 'Waiting for relation with InfluxDB.')
+    
+    
 @when('layer-kapacitor.started', 'kapacitor.available')
 def configure_relation(kapacitor):
     kapacitor.configure(unit_private_ip(), config()['port'])
