@@ -85,7 +85,7 @@ def change_configuration(influxdb):
         service_restart("kapacitor")
     status_set('active', '(Ready) Kapacitor started.')
 
- @@when('layer-kapacitor.started', 'influxdb.departed'):
+ @when('layer-kapacitor.started', 'influxdb.departed')
  def relation_removed(influxdb):
     remove_state('layer-kapacitor.started')
     remove_state('layer-kapacitor.connected')
