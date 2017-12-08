@@ -9,7 +9,7 @@ and connect it to a running times series database.
 Deploy the Kapacitor charm and the required influxDB charm and add the relation between the two charms:
 
 ```bash
-juju deploy cs:~tengu-team/kapacitor-0
+juju deploy cs:~tengu-team/kapacitor-1
 juju deploy cs:~chris.macnaughton/influxdb-7
 juju add-relation kapacitor influxdb
 ```
