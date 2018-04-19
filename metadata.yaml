@@ -1,8 +1,9 @@
 name: kapacitor
-summary: Kapacitor is a data processing engine.
+summary: Kapacitor is a data processing engine developed by InfluxData.
 maintainer: Dixan Peña Peña <dixan.pena@tengu.io>
 description: |
-  Kapacitor is designed to process streaming data in real-time.
+   This charm installs a standalone Kapacitor unit and connect it to a running
+   InfluxDB database.
 tags:
    - streaming
    - big_data

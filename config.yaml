@@ -2,4 +2,4 @@ options:
   port:
     type: int
     default: 9092
-    description: "The port that Kapacitor uses"
+    description: The Web UI port of Kapacitor.

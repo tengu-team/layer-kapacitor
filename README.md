@@ -2,19 +2,18 @@
 
 Kapacitor is a data processing engine.  It can process both stream and batch
 data from InfluxDB. This charm installs [Kapacitor](https://docs.influxdata.com/kapacitor)
-and connect it to a running times series database.
+and connect it to a running InfluxDB database.
 
 # Usage
 
-Deploy the Kapacitor charm and the required influxDB charm and add the relation between the two charms:
+Deploy the Kapacitor charm and the required InfluxDB charm and add the relation between the two charms:
 
 ```bash
 juju deploy cs:~tengu-team/kapacitor-1
-juju deploy cs:~chris.macnaughton/influxdb-7
+juju deploy cs:~chris.macnaughton/influxdb
 juju add-relation kapacitor influxdb
 ```
-Kapacitor is providing [a custom interface](https://github.com/tengu-team/interface-kapacitor).
-
+Kapacitor provides [a custom interface](https://github.com/tengu-team/interface-kapacitor).
 
 # Contact Information
 
@@ -24,4 +23,6 @@ Report bugs in the [layer-kapacitor GitHub repo](https://github.com/tengu-team/l
 
 ## Authors
 
+ - Michiel Ghyselinck <michiel.ghyselinck@tengu.io>
+ - Sébastien Pattyn <sebastien.pattyn@tengu.io>
  - Dixan Peña Peña <dixan.pena@tengu.io>

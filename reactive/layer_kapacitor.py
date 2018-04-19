@@ -19,14 +19,14 @@ import os
 import subprocess
 
 import charmhelpers.fetch.archiveurl
-from charms.reactive import when, when_not, set_state, remove_state
-from charmhelpers.core.hookenv import status_set, open_port, unit_private_ip, close_port, config
+from charms.reactive import when, when_not, set_flag, clear_flag
+from charmhelpers.core.hookenv import status_set, config, open_port, close_port, unit_private_ip
 from charmhelpers.core.templating import render
-from charmhelpers.core.host import service_restart, service_stop
+from charmhelpers.core.host import service_start, service_restart, service_stop
 
 
-@when_not('layer-kapacitor.installed')
-def install_layer_kapacitor():
+@when_not('kapacitor.installed')
+def install_kapacitor():
     kapacitor_dir = '/opt/kapacitor'
     if not os.path.isdir(kapacitor_dir):
         os.mkdir(kapacitor_dir)
@@ -34,16 +34,15 @@ def install_layer_kapacitor():
     handler.download('https://dl.influxdata.com/kapacitor/releases/kapacitor_1.3.1_amd64.deb',
                      kapacitor_dir + '/kapacitor_1.3.1_amd64.deb')
     subprocess.check_call(['sudo', 'dpkg', '-i', '/opt/kapacitor/kapacitor_1.3.1_amd64.deb'])
-    set_state('layer-kapacitor.installed')
-    status_set('blocked', 'Waiting for relation with InfluxDB.')
+    status_set('blocked', 'Waiting for relation with InfluxDB')
+    set_flag('kapacitor.installed')
 
 
-@when('layer-kapacitor.installed', 'influxdb.available')
-@when_not('layer-kapacitor.connected')
+@when('kapacitor.installed', 'influxdb.available')
+@when_not('kapacitor.connected')
 def connect_kapacitor(influxdb):
-    status_set('waiting', 'Kapacitor connected to InfluxDB.')
-    conf = config()
-    port = conf['port']
+    status_set('maintenance', 'Connecting Kapacitor to InfluxDB')
+    port = config()['port']
     render(source='kapacitor.conf',
            target='/etc/kapacitor/kapacitor.conf',
            context={
@@ -51,23 +50,21 @@ def connect_kapacitor(influxdb):
                'influxdb': influxdb,
                'hostname': unit_private_ip()
            })
-    set_state('layer-kapacitor.connected')
+    set_flag('kapacitor.connected')
 
 
-@when('layer-kapacitor.connected')
-@when_not('layer-kapacitor.started')
+@when('kapacitor.connected')
+@when_not('kapacitor.started')
 def start_kapacitor():
-    conf = config()
-    port = conf['port']
-    open_port(port)
-    subprocess.check_call(['sudo', 'service', 'kapacitor', 'start'])
-    status_set('active', '(Ready) Kapacitor started.')
-    set_state('layer-kapacitor.started')
+    open_port(config()['port'])
+    service_start('kapacitor')
+    status_set('active', '(Ready) Kapacitor is running')
+    set_flag('kapacitor.started')
 
 
-@when('layer-kapacitor.started', 'config.changed', 'influxdb.available')
+@when('kapacitor.started', 'config.changed', 'influxdb.available')
 def change_configuration(influxdb):
-    status_set('maintenance', 'configuring Kapacitor')
+    status_set('maintenance', 'Configuring Kapacitor')
     conf = config()
     port = conf['port']
     old_port = conf.previous('port')
@@ -82,18 +79,20 @@ def change_configuration(influxdb):
         if old_port is not None:
             close_port(old_port)
         open_port(port)
-        service_restart("kapacitor")
-    status_set('active', '(Ready) Kapacitor started.')
+        service_restart('kapacitor')
+    status_set('active', '(Ready) Kapacitor is running')
 
-@when('layer-kapacitor.started', 'influxdb.departed')
-def relation_removed(influxdb):
-    remove_state('layer-kapacitor.started')
-    remove_state('layer-kapacitor.connected')
-    service_stop("kapacitor")
+
+@when('kapacitor.started')
+@when_not('influxdb.available')
+def relation_removed():
+    clear_flag('kapacitor.connected')
+    clear_flag('kapacitor.started')
+    service_stop('kapacitor')
     close_port(config()['port'])
     status_set('blocked', 'Waiting for relation with InfluxDB.')
 
 
-@when('layer-kapacitor.started', 'kapacitor.available')
+@when('kapacitor.started', 'kapacitor.available')
 def configure_relation(kapacitor):
     kapacitor.configure(unit_private_ip(), config()['port'])
