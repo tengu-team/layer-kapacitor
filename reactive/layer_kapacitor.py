@@ -25,7 +25,7 @@ from charmhelpers.core.templating import render
 from charmhelpers.core.host import service_start, service_restart, service_stop
 
 
-@when_not('kapacitor.installed')
+@when_not('layer-kapacitor.installed')
 def install_kapacitor():
     kapacitor_dir = '/opt/kapacitor'
     if not os.path.isdir(kapacitor_dir):
@@ -35,11 +35,11 @@ def install_kapacitor():
                      kapacitor_dir + '/kapacitor_1.3.1_amd64.deb')
     subprocess.check_call(['sudo', 'dpkg', '-i', '/opt/kapacitor/kapacitor_1.3.1_amd64.deb'])
     status_set('blocked', 'Waiting for relation with InfluxDB')
-    set_flag('kapacitor.installed')
+    set_flag('layer-kapacitor.installed')
 
 
-@when('kapacitor.installed', 'influxdb.available')
-@when_not('kapacitor.connected')
+@when('layer-kapacitor.installed', 'influxdb.available')
+@when_not('layer-kapacitor.connected')
 def connect_kapacitor(influxdb):
     status_set('maintenance', 'Connecting Kapacitor to InfluxDB')
     port = config()['port']
@@ -50,19 +50,19 @@ def connect_kapacitor(influxdb):
                'influxdb': influxdb,
                'hostname': unit_private_ip()
            })
-    set_flag('kapacitor.connected')
+    set_flag('layer-kapacitor.connected')
 
 
-@when('kapacitor.connected')
-@when_not('kapacitor.started')
+@when('layer-kapacitor.connected')
+@when_not('layer-kapacitor.started')
 def start_kapacitor():
     open_port(config()['port'])
     service_start('kapacitor')
     status_set('active', '(Ready) Kapacitor is running')
-    set_flag('kapacitor.started')
+    set_flag('layer-kapacitor.started')
 
 
-@when('kapacitor.started', 'config.changed', 'influxdb.available')
+@when('layer-kapacitor.started', 'config.changed', 'influxdb.available')
 def change_configuration(influxdb):
     status_set('maintenance', 'Configuring Kapacitor')
     conf = config()
@@ -83,16 +83,16 @@ def change_configuration(influxdb):
     status_set('active', '(Ready) Kapacitor is running')
 
 
-@when('kapacitor.started')
+@when('layer-kapacitor.started')
 @when_not('influxdb.available')
 def relation_removed():
-    clear_flag('kapacitor.connected')
-    clear_flag('kapacitor.started')
+    clear_flag('layer-kapacitor.connected')
+    clear_flag('layer-kapacitor.started')
     service_stop('kapacitor')
     close_port(config()['port'])
     status_set('blocked', 'Waiting for relation with InfluxDB.')
 
 
-@when('kapacitor.started', 'kapacitor.available')
+@when('layer-kapacitor.started', 'kapacitor.available')
 def configure_relation(kapacitor):
     kapacitor.configure(unit_private_ip(), config()['port'])

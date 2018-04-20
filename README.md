@@ -9,8 +9,8 @@ and connect it to a running InfluxDB database.
 Deploy the Kapacitor charm and the required InfluxDB charm and add the relation between the two charms:
 
 ```bash
-juju deploy cs:~tengu-team/kapacitor-1
-juju deploy cs:~chris.macnaughton/influxdb
+juju deploy kapacitor
+juju deploy cs:~chris.macnaughton/influxdb-7
 juju add-relation kapacitor influxdb
 ```
 Kapacitor provides [a custom interface](https://github.com/tengu-team/interface-kapacitor).
